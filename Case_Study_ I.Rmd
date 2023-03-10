@@ -1,6 +1,6 @@
 ---
 title: "Case Study I"
-author: "Emily Schmidt and Genta Menmeti"
+author: "Emily Schmidt and Genta Mehmeti"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -9,107 +9,207 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r libraries}
+```{r, message=FALSE, warning=FALSE}
+# Clear the database
+rm(list=ls()) 
+```
+
+### Load Packages and Data
+
+```{r, message=FALSE, warning=FALSE}
 library(dplyr) 
 library(ggplot2)
 library(readr) # Imports Excel csv
 library(naniar) # Missing values
 library(tidyverse)
 library(caret)
+library(kableExtra) # Tables
+library(cowplot) # Arrange plots into a grid and label them
+library(GGally) # Allows to build a great scatterplot matrix
+
+source("VIF.R")
 ```
 
-```{r}
-# Clear the database
-rm(list=ls()) 
-```
-
-
-### Load Data
 ```{r, echo=FALSE, include=TRUE, message=FALSE, warning=FALSE}
 # Load data
 helio <- read_csv("Case_Stud_ I.csv")
 #View(Case_Stud_I)
-
-head(helio)
-str(helio) # Structure of object
-dim(helio) # Dimensions
 ```
+
 ### Data Exploration
-```{r Data Exploration}
+```{r, message=FALSE, warning=FALSE}
+kable(head(helio)) %>% kable_classic() %>% 
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed","responsive")) %>%
+  kable_styling(position = "center") # Use kable to design table
+
+str(helio) # Structure of object/ Type of variables
 dim(helio) # Dimensions of data
 summary(helio) # Produce result summaries of all variables
-str(helio) # Type of variables
+
 # Number of unique values in each variable
 sapply(helio, function(x) length(unique(x)))
 ```
 
-```{r Missing Values}
-# Missing values analysis
-gg_miss_var(helio) + ggtitle("Missing values")
+```{r, message=FALSE, warning=FALSE}
+# Produce result summaries
+CSUM <- data.frame(mean = sapply(helio[,2], mean,na.rm = T) 
+                  ,median = sapply(helio[,2], median,na.rm = T)
+                  ,min = sapply(helio[,2], min,na.rm = T)
+                  ,max = sapply(helio[,2], max,na.rm = T)
+                  ,sd = sapply(helio[,2], sd,na.rm = T))
+
+colnames(CSUM) = c("Mean","Median","Min","Max","Standard Deviation")
+
+kable(head(CSUM)) |> kable_classic() |> 
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed","responsive")) |> 
+  kable_styling(position = "center") # Use kable to design table
 ```
 
+```{r, message=FALSE, warning=FALSE}
+histogram <- ggplot(gather(data = helio),aes(x = value)) +
+  geom_histogram(aes(y = ..density..),bins = 10, color = "white", fill = "blue") + # Creates bin sizing & sets line color
+  geom_density(alpha = .2, fill = "#56B4E9") +
+  facet_wrap(~key,scales = "free") + # Converting the graphs into panels
+  ggtitle("Quantitative Variable Analysis") + # Title name
+  ylab("Count") + xlab("Value") + # Label names
+  theme_classic() # A classic theme, with x and y axis lines and no grid lines
+
+histogram
+```
+
+```{r, message=FALSE, warning=FALSE}
+# Using ggplot to create two boxplots with various features
+MF_cost.box <- ggplot(data = helio, aes(x = "",y = manufacturing_cost)) + 
+    geom_boxplot(fill = "lightblue", alpha=0.2, outlier.shape = 21, outlier.color = "black") +
+    stat_boxplot(geom = 'errorbar', linetype=1, width=0.25) + 
+    ylab("Manufacturing Cost") + # Label names
+    theme_classic() # A classic theme, no grid lines
+
+Number_solar.box <- ggplot(data = helio, aes(x = "",y = number_of_solar_panels)) + 
+    geom_boxplot(fill = "lightblue", alpha=0.2, outlier.shape = 21, outlier.color = "black") +
+    stat_boxplot(geom = 'errorbar', linetype=1, width=0.25) + 
+    ylab("Number of Solar Panels") + # Label names
+    theme_classic() # A classic theme, no grid lines
+
+# Places the graphs into one space
+plot_grid(MF_cost.box, Number_solar.box, labels = "AUTO", 
+  label_fontfamily = "serif",
+  label_fontface = "plain",
+  label_colour = "lightblue")
+```
+
+```{r, message=FALSE, warning=FALSE}
+# Missing values analysis
+gg_miss_var(helio) + ggtitle("Missing Values")
+```
 
 ## Question 1
 Use an electronic spreadsheet to plot the data displayed in table 1 and draw a scatter plot (point diagram). Does the multiplicative learning model which assumes the following relationship: \(Y = AX^b\) apply to this data set? In our case \(Y\) are the average manufacturing cost of the last batch of 100 solar panels at Heliotronic in $ after having
 produced a cumulative production of \(X\) solar panels. In the table \(X\) represents the column labeled total number of solar panels produced at Heliotronics. \(b\) is the experience parameter not to be confused with the learning rate. \(X\) is the price or cost of the first unit. Obviously \(Y = AX^b\) is not a linear relationship of the type that regression analysis can model \(Y = a + b_1x_1\). So the question now is to transform the data in order to get a linear relationship. Make an appropriate transformation of the data and redo the plot with the transformed data.
-```{r ggpairs, fig.width = 6, fig.height = 5}
+```{r, fig.width = 6, fig.height = 5, message=FALSE, warning=FALSE}
+# Create scatterplot with original values
 ggplot(helio, aes(number_of_solar_panels, manufacturing_cost) ) +
   geom_point()+
-    geom_smooth() +
-  ggtitle("Quantitative Scatterplot")
+  geom_smooth() +
+  ggtitle("Quantitative Scatterplot") +
+  ylab("Manufacturing Cost") + # Label names 
+  xlab("Number of Solar Panels") + # Label names 
+  theme_classic() # A classic theme, no grid lines
 ```
 
+A multiplicative learning model assumes the relationship of \(Y = AX^b\). This model is non-linear, and follows the assumption that as the cost of manufacturing decreases, the number of units produced increases. This is seen above as their relationship is inversely related. The goal of modeling this data is to fit a linear equation to show the relationship between the independent variable ('number of solar panels') and the dependent ('manufacturing cost') to predict price per some 'x' amount of units.
 
-```{r}
-attach(helio)
-plot(number_of_solar_panels, manufacturing_cost)
+- \(Y\): The inflation-adjusted production cost per unit of a product  
+- \(X\): The total cumulative production of a product  
+- \(b\): The experience parameter not to be confused with the learning rate  
+- \(A\): The production cost of the first unit  
+
+```{r, message=FALSE, warning=FALSE}
+# Used ggpairs to create a scatterplot matrix
+ggpairs(helio, title = "Scatterplot Matrix",
+    columns = 1:2,
+    proportions = "auto",
+    columnLabels = c("Number of Solar Panels","Manufacturing Cost"),
+    upper = list(continuous = wrap('cor',size = 3)),)
 ```
 
-```{r}
-helio=helio |>  mutate(Log_number=log10(number_of_solar_panels))
-helio=helio |>  mutate(Log_cost=log10(manufacturing_cost))
+```{r, message=FALSE, warning=FALSE}
+# Log transform quantative variables
+helio = helio |>  mutate(Log_number = log10(number_of_solar_panels))
+helio = helio |>  mutate(Log_cost = log10(manufacturing_cost))
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
+# Create scatterplot with original values
 ggplot(helio, aes(Log_number, Log_cost) ) +
   geom_point()+
-    geom_smooth(method="lm")
+  geom_smooth(method = "lm") +
+  ggtitle("Transformed Quantitative Scatterplot") +
+  ylab("Manufacturing Cost (log)") + # Label names 
+  xlab("Number of Solar Panels (log)") + # Label names 
+  theme_classic() # A classic theme, no grid lines
 ```
 
+To address the problem of non-linearity, transformation of the variables may improve the accuracy of the model. The method used for the predictor and explanatory variable is taking the log. These two new values are added into the data frame and can be remodeled to show the inverse relationship through a linear regression. Now, the model aligns with \(Y = a + b_1x_1\).
 
 ## Question 2
 Once you have answered the above questions, conduct a linear regression with the transformed data: Use `R` to estimate the regression model. Please interpret the results of the regression analysis! How well does the model explain the data? What is the learning rate that applies in this case?
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # Linear regression
-lin_reg_helio = with(helio,lm(Log_number ~ Log_cost))
+lin_reg_helio = with(helio,lm(Log_cost ~ Log_number))
 summary(lin_reg_helio)
+```
+
+The summary of the linear regression model aligns with the \(Y = a + b_1x_1\), with the following characteristics:  
+- Model equation: \(LogCost = 4.309353 + (-0.154991)(LogNumber)\)  
+- Multiple R-squared is 95.02%, indicating that about 95% of the variability in the dependent variable can be explained by the number of solar panels produced. If more data was given, the Adjusted R-squared may have been a better metric since it adjusts for the amount of independent variables. 
+**Additionally, the learning rate...**
+
+### Assumption Violations 
+
+**Variance Inflarion Factors**
+```{r}
+# CODE NEEDS TO BE FIXED
+#VIF(helio[,2], helio[,1]) # Call VIF from the source
+```
+
+To properly analyze the results in the table above, we need to ensure that the variables to not exceed the average of VIF. Multicollinearity is present when certain VIF are larger than 5 or 10. None of the variables show signs of multicollinearity. **Therefore, we can conclude we do not have to do a model selection.**
+
+```{r}
+par(mfrow = c(2,2)) # Organizes graphs in a specific order
+plot(lin_reg_helio, col = "blue") # Plots the linear regression
+```
+
+```{r}
+par(mfrow = c(1,4)) # Organizes graphs in a specific order
+PlotResidX(lin_reg_helio[, 1:2], lin_reg_helio$residuals, col= "blue") # Creates the residuals plots and utilized color
+```
+
+```{r}
+# Function to graph autocorrelations
+acf(resid(lin_reg_helio), main="Residuals Autocorrelation: LS") 
 ```
 
 ## Question 3
 Please use the experience curve estimate from the regression model to calculate the expected average manufacturing cost per solar panel for the 400 solar panels that would be produced. for Switzerland. *Hint*: estimate the average production cost per solar panel for 4700, 4800, 4900 and 5000 units and compute their mean.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # predict the cost of manufacturing 4700, 4800, 4900, and 5000 solar panels
-x <-  c(4700, 4800, 4900, 5000)
-y_pred <- predict(lin_reg_helio, newdata = x)
+#x <-  c(4700, 4800, 4900, 5000)
+#y_pred <- predict(lin_reg_helio, newdata = x)
 
 # compute the mean of the predicted costs
-mean_cost <- mean(y_pred)
-mean_cost
+#mean_cost <- mean(y_pred)
+#mean_cost
 ```
 
 
 ## Question 4
 Please calculate a 95% confidence interval for the average manufacturing cost per solar panel for the panels produced for Switzerland by using the lower and upper bounds of the confidence interval estimate for the experience parameter. You should calculate two extra regression equations for both limits and then calculate the expected average manufacturing cost per solar panel for the 400 solar panels that would be produced for Switzerland as in exercise 3.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # Computing confidence intervals for one or more parameters in a fitted model
 CI = confint(lin_reg_helio)
 CI
 ```
-
-
-
-
-
 
