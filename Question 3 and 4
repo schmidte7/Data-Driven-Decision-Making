@@ -25,12 +25,12 @@ mean_cost * 400
 
 ###Question 4
 
-This confidence interval is for the regression coefficients of the regression model 
+#This confidence interval is for the regression coefficients of the regression model 
 with Log_cost as the response variable and Log_number as the predictor variable. 
 Specifically, the 95% confidence interval for the intercept (the coefficient for the constant term) is (3.3600629, 3.4586432), 
 and the 95% confidence interval for the coefficient of Log_number is (-0.1715456, -0.1384356).
 
-The interpretation of a confidence interval is that if we were to repeatedly sample data 
+#The interpretation of a confidence interval is that if we were to repeatedly sample data 
 from the population and calculate confidence intervals in the same way, approximately 95% of those intervals 
 would contain the true value of the population parameter (in this case, the true value of the intercept or coefficient). 
 In other words, we are 95% confident that the true value of the intercept is between 3.3600629 and 3.4586432, 
