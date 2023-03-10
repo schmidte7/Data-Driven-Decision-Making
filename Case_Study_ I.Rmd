@@ -26,6 +26,7 @@ library(caret)
 library(kableExtra) # Tables
 library(cowplot) # Arrange plots into a grid and label them
 library(GGally) # Allows to build a great scatterplot matrix
+library(car) # VIF 
 
 source("VIF.R")
 ```
@@ -106,7 +107,7 @@ gg_miss_var(helio) + ggtitle("Missing Values")
 ## Question 1
 Use an electronic spreadsheet to plot the data displayed in table 1 and draw a scatter plot (point diagram). Does the multiplicative learning model which assumes the following relationship: \(Y = AX^b\) apply to this data set? In our case \(Y\) are the average manufacturing cost of the last batch of 100 solar panels at Heliotronic in $ after having
 produced a cumulative production of \(X\) solar panels. In the table \(X\) represents the column labeled total number of solar panels produced at Heliotronics. \(b\) is the experience parameter not to be confused with the learning rate. \(X\) is the price or cost of the first unit. Obviously \(Y = AX^b\) is not a linear relationship of the type that regression analysis can model \(Y = a + b_1x_1\). So the question now is to transform the data in order to get a linear relationship. Make an appropriate transformation of the data and redo the plot with the transformed data.
-```{r, fig.width = 6, fig.height = 5, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE}
 # Create scatterplot with original values
 ggplot(helio, aes(number_of_solar_panels, manufacturing_cost) ) +
   geom_point()+
@@ -167,28 +168,52 @@ The summary of the linear regression model aligns with the \(Y = a + b_1x_1\), w
 
 ### Assumption Violations 
 
-**Variance Inflarion Factors**
+**Variance Inflation Factors**
 ```{r}
-# CODE NEEDS TO BE FIXED
-#VIF(helio[,2], helio[,1]) # Call VIF from the source
+# CODE NEEDS TO BE FIXED # Compute the VIF value (explained)
+#model <- with(Log_cost ~ Log_number, data = helio)
+#vif(model) # Call VIF from the source
+```
+
+
+```{r}
+# Compute the tolerance value (unique)
+#tolerance_value = 1 - VIF
+#tolerance_value
 ```
 
 To properly analyze the results in the table above, we need to ensure that the variables to not exceed the average of VIF. Multicollinearity is present when certain VIF are larger than 5 or 10. None of the variables show signs of multicollinearity. **Therefore, we can conclude we do not have to do a model selection.**
 
-```{r}
+```{r, fig.width = 6, fig.height = 5}
 par(mfrow = c(2,2)) # Organizes graphs in a specific order
 plot(lin_reg_helio, col = "blue") # Plots the linear regression
 ```
 
 ```{r}
-par(mfrow = c(1,4)) # Organizes graphs in a specific order
-PlotResidX(lin_reg_helio[, 1:2], lin_reg_helio$residuals, col= "blue") # Creates the residuals plots and utilized color
-```
-
-```{r}
 # Function to graph autocorrelations
-acf(resid(lin_reg_helio), main="Residuals Autocorrelation: LS") 
+acf(resid(lin_reg_helio), main = "Residuals Autocorrelation") 
 ```
+**WILL ADJUST COMMENTS ONCE I FIGURE OUT VIF**
+**Residuals vs Fitted**\
+With any model, the residuals should assume the following:\
+1. ± as many negatives as positives (values), distributed around zero\
+2. No structure\
+3. No extreme values\
+To ensure this criteria is met, we use the Residuals vs Fitted to check the lack of structure or presence of extreme values. It is important to note the following:\
+- A residual will be considered large if its absolute value exceeds (approximately) 2σ(hat)\
+- When n is large, a residual will be considered large if its absolute value exceeds (approximately) 4σ(hat) (otherwise, too many residues will be considered large!)
+
+**Normal Q-Q**\
+To check the normality of the errors \(ε_i\), analyze a normal Q-Q plot of the residuals. There are three values that slightly depart by the tail. Additionally, a zigzag pattern hugs the regression line and it is difficult to say whether or not we would consider this data normally distributed.**INCOMPLETE**
+
+**Scale-Location**\
+As seen in the other graphs, there is an extreme residual. We know that this is considered extreme because  of the following: 2xσ.**INCOMPLETE** 
+
+**Residuals vs Leverage**\
+The (40) outlier has a big influence as it is underneath the 1 line to the right that refers to Cook’s distance. **INCOMPLETE**\
+
+**Autocorrelation**\
+The ACF plot shows that there is no evidence of autocorrelation between the residuals as the lags do not exceed the confidence interval.
 
 ## Question 3
 Please use the experience curve estimate from the regression model to calculate the expected average manufacturing cost per solar panel for the 400 solar panels that would be produced. for Switzerland. *Hint*: estimate the average production cost per solar panel for 4700, 4800, 4900 and 5000 units and compute their mean.
