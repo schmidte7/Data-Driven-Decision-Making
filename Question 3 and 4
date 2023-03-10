@@ -1,6 +1,14 @@
-From the regression model above the estimated coefficient for the Log_number predictor variable is negative (-0.154991), which suggests that as the number of solar panels produced (cumulative production or experience) increases, the manufacturing cost per unit decreases. The experience curve estimate can be used to predict the average manufacturing cost per unit for a given level of cumulative production or experience.
+###Question 3
 
-Therefore we have calculated the expected cost per solar panel for each quantity of interest (result: 2.95) and cost for the 400 solar panels produced (result: 1180.4). In the scatterplot matrix with log data, we have noticed a cost of 1200 for 800 solar that means producing 400 of them will cost us around 15.5% less. 
+#From the regression model above the estimated coefficient for the Log_number predictor variable is negative (-0.154991), 
+which suggests that as the number of solar panels produced (cumulative production or experience) increases, 
+the manufacturing cost per unit decreases. 
+The experience curve estimate can be used to predict the average manufacturing cost per unit for a given level of cumulative production or experience.
+
+#Therefore we have calculated the expected cost per solar panel for each quantity of interest 
+(result: 2.95) and cost for the 400 solar panels produced (result: 1180.4). 
+In the scatterplot matrix with log data, we have noticed a cost of 1200 for 800 solar 
+that means producing 400 of them will cost us around 15.5% less. 
 
 ```{r setup, include=FALSE}
 # predict the cost of manufacturing 4700, 4800, 4900, and 5000 solar panels
