@@ -1,6 +1,6 @@
 ---
 title: "Case Study I"
-author: "Emily Schmidt and Genta Menmeti"
+author: "Emily Schmidt and Genta Mehmeti"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -26,6 +26,7 @@ library(caret)
 library(kableExtra) # Tables
 library(cowplot) # Arrange plots into a grid and label them
 library(GGally) # Allows to build a great scatterplot matrix
+library(car) # VIF 
 
 #source("VIF.R")
 ```
@@ -88,7 +89,7 @@ MF_cost.box <- ggplot(data = helio, aes(x = "",y = manufacturing_cost)) +
 Number_solar.box <- ggplot(data = helio, aes(x = "",y = number_of_solar_panels)) + 
     geom_boxplot(fill = "lightblue", alpha=0.2, outlier.shape = 21, outlier.color = "black") +
     stat_boxplot(geom = 'errorbar', linetype=1, width=0.25) + 
-    ylab("Manufacturing Cost") + # Label names
+    ylab("Number of Solar Panels") + # Label names
     theme_classic() # A classic theme, no grid lines
 
 # Places the graphs into one space
@@ -106,7 +107,7 @@ gg_miss_var(helio) + ggtitle("Missing Values")
 ## Question 1
 Use an electronic spreadsheet to plot the data displayed in table 1 and draw a scatter plot (point diagram). Does the multiplicative learning model which assumes the following relationship: \(Y = AX^b\) apply to this data set? In our case \(Y\) are the average manufacturing cost of the last batch of 100 solar panels at Heliotronic in $ after having
 produced a cumulative production of \(X\) solar panels. In the table \(X\) represents the column labeled total number of solar panels produced at Heliotronics. \(b\) is the experience parameter not to be confused with the learning rate. \(X\) is the price or cost of the first unit. Obviously \(Y = AX^b\) is not a linear relationship of the type that regression analysis can model \(Y = a + b_1x_1\). So the question now is to transform the data in order to get a linear relationship. Make an appropriate transformation of the data and redo the plot with the transformed data.
-```{r, fig.width = 6, fig.height = 5, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE}
 # Create scatterplot with original values
 ggplot(helio, aes(number_of_solar_panels, manufacturing_cost) ) +
   geom_point()+
@@ -158,12 +159,70 @@ Once you have answered the above questions, conduct a linear regression with the
 # Linear regression
 lin_reg_helio = with(helio,lm(Log_cost ~ Log_number))
 summary(lin_reg_helio)
+r_squared <- summary(lin_reg_helio)$r.squared # Computed for Tolerance value and VIF
 ```
 
-The summary of the linear regression model aligns with the \(Y = a + b_1x_1\), with the following characteristics:  
-- Model equation: \(LogCost = 4.309353 + (-0.154991)(LogNumber)\)  
-- Multiple R-squared is 95.02%, indicating that about 95% of the variability in the dependent variable can be explained by the number of solar panels produced. If more data was given, the Adjusted R-squared may have been a better metric since it adjusts for the amount of independent variables. 
+The summary of the linear regression model aligns with the \(Y = a + b_1x_1\), with the following characteristics: 
+
+- Model equation: \(LogCost = 4.309353 + (-0.154991)(LogNumber)\)\ 
+- Multiple R-squared is 95.02%, indicating that about 95% of the variability in the dependent variable can be explained by the number of solar panels produced. If more data was given, the Adjusted R-squared may have been a better metric since it adjusts for the amount of independent variables.\
+
 **Additionally, the learning rate...**
+
+### Assumption Violations 
+
+**Variance Inflation Factors**
+```{r}
+# Compute the VIF value (explained)
+VIF = 1/(1-r_squared)
+VIF
+```
+
+```{r}
+# Compute the tolerance value (unique)
+tolerance_value = 1 - r_squared
+tolerance_value
+```
+
+To properly analyze the results in the table above, we need to ensure that the variables to not exceed the average of VIF. Multicollinearity is present when certain VIF are larger than 5 or 10. The VIF in this data definitely exceeds at 20.07, showing signs of  multicollinearity between the number of solar panels and manufacturing cost. Additionally, the tolerance value or unique variance is approximately 5.0%, while the explained would be roughly 95.0%. **Therefore, we can conclude we do have to do a model selection.**
+
+```{r, fig.width = 6, fig.height = 5}
+par(mfrow = c(2,2)) # Organizes graphs in a specific order
+plot(lin_reg_helio, col = "blue") # Plots the linear regression
+
+d <- density(lin_reg_helio[['residuals']])
+plot(d, main = 'Residual KDE Plot',xlab = 'Residual value')
+
+```
+
+```{r}
+# Function to graph autocorrelations
+acf(resid(lin_reg_helio), main = "Residuals Autocorrelation") 
+```
+**WILL ADJUST COMMENTS ONCE I FIGURE OUT VIF**
+**Residuals vs Fitted**\
+With any model, the residuals should assume the following:\
+1. ± as many negatives as positives (values), distributed around zero\
+2. No structure\
+3. No extreme values\
+To ensure this criteria is met, we use the Residuals vs Fitted to check the lack of structure or presence of extreme values. It is important to note the following:\
+
+- A residual will be considered large if its absolute value exceeds (approximately) 2σ(hat)\
+- When n is large, a residual will be considered large if its absolute value exceeds (approximately) 4σ(hat) (otherwise, too many residues will be considered large!)\
+
+There do appear to be three outliers (6, 11, and 18) and possibly heteroskedasticity as most residuals are grouped to the left and fewer are shown to the right which is considered non-constant. 
+
+**Normal Q-Q**\
+To check the normality of the errors \(ε_i\), analyze a normal Q-Q plot of the residuals. There appears to be a zigzag-like pattern in the residuals. This is reasonable enough to say that the points approximately fall on the line due to the KDE plot. In that chart, it is close to normality, but skews a little to the right. In addition, there is some departure by each of the tails, which are three outliers. The data is assumed to be normally distributed by its roughly "bell shaped" curve.
+
+**Scale-Location**\
+As seen in the other graphs, there are extreme residuals. We know that this is considered extreme because  of the following: 2xσ.
+
+**Residuals vs Leverage**\
+The outliers have a big influence as it is exceeds the 1 and -1 lines that refers to Cook’s distance.
+
+**Autocorrelation**\
+The ACF plot shows that there is no evidence of autocorrelation between the residuals as the lags do not exceed the confidence interval.
 
 ## Question 3
 Please use the experience curve estimate from the regression model to calculate the expected average manufacturing cost per solar panel for the 400 solar panels that would be produced. for Switzerland. *Hint*: estimate the average production cost per solar panel for 4700, 4800, 4900 and 5000 units and compute their mean.
@@ -187,6 +246,5 @@ Please calculate a 95% confidence interval for the average manufacturing cost pe
 CI = confint(lin_reg_helio)
 CI
 ```
-
 
 
