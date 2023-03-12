@@ -159,34 +159,40 @@ Once you have answered the above questions, conduct a linear regression with the
 # Linear regression
 lin_reg_helio = with(helio,lm(Log_cost ~ Log_number))
 summary(lin_reg_helio)
+r_squared <- summary(lin_reg_helio)$r.squared # Computed for Tolerance value and VIF
 ```
 
-The summary of the linear regression model aligns with the \(Y = a + b_1x_1\), with the following characteristics:  
-- Model equation: \(LogCost = 4.309353 + (-0.154991)(LogNumber)\)  
-- Multiple R-squared is 95.02%, indicating that about 95% of the variability in the dependent variable can be explained by the number of solar panels produced. If more data was given, the Adjusted R-squared may have been a better metric since it adjusts for the amount of independent variables. 
+The summary of the linear regression model aligns with the \(Y = a + b_1x_1\), with the following characteristics: 
+
+- Model equation: \(LogCost = 4.309353 + (-0.154991)(LogNumber)\)\ 
+- Multiple R-squared is 95.02%, indicating that about 95% of the variability in the dependent variable can be explained by the number of solar panels produced. If more data was given, the Adjusted R-squared may have been a better metric since it adjusts for the amount of independent variables.\
+
 **Additionally, the learning rate...**
 
 ### Assumption Violations 
 
 **Variance Inflation Factors**
 ```{r}
-# CODE NEEDS TO BE FIXED # Compute the VIF value (explained)
-#model <- with(Log_cost ~ Log_number, data = helio)
-#vif(model) # Call VIF from the source
+# Compute the VIF value (explained)
+VIF = 1/(1-r_squared)
+VIF
 ```
-
 
 ```{r}
 # Compute the tolerance value (unique)
-#tolerance_value = 1 - VIF
-#tolerance_value
+tolerance_value = 1 - r_squared
+tolerance_value
 ```
 
-To properly analyze the results in the table above, we need to ensure that the variables to not exceed the average of VIF. Multicollinearity is present when certain VIF are larger than 5 or 10. None of the variables show signs of multicollinearity. **Therefore, we can conclude we do not have to do a model selection.**
+To properly analyze the results in the table above, we need to ensure that the variables to not exceed the average of VIF. Multicollinearity is present when certain VIF are larger than 5 or 10. The VIF in this data definitely exceeds at 20.07, showing signs of  multicollinearity between the number of solar panels and manufacturing cost. Additionally, the tolerance value or unique variance is approximately 5.0%, while the explained would be roughly 95.0%. **Therefore, we can conclude we do have to do a model selection.**
 
 ```{r, fig.width = 6, fig.height = 5}
 par(mfrow = c(2,2)) # Organizes graphs in a specific order
 plot(lin_reg_helio, col = "blue") # Plots the linear regression
+
+d <- density(lin_reg_helio[['residuals']])
+plot(d, main = 'Residual KDE Plot',xlab = 'Residual value')
+
 ```
 
 ```{r}
@@ -200,17 +206,20 @@ With any model, the residuals should assume the following:\
 2. No structure\
 3. No extreme values\
 To ensure this criteria is met, we use the Residuals vs Fitted to check the lack of structure or presence of extreme values. It is important to note the following:\
+
 - A residual will be considered large if its absolute value exceeds (approximately) 2σ(hat)\
-- When n is large, a residual will be considered large if its absolute value exceeds (approximately) 4σ(hat) (otherwise, too many residues will be considered large!)
+- When n is large, a residual will be considered large if its absolute value exceeds (approximately) 4σ(hat) (otherwise, too many residues will be considered large!)\
+
+There do appear to be three outliers (6, 11, and 18) and possibly heteroskedasticity as most residuals are grouped to the left and fewer are shown to the right which is considered non-constant. 
 
 **Normal Q-Q**\
-To check the normality of the errors \(ε_i\), analyze a normal Q-Q plot of the residuals. There are three values that slightly depart by the tail. Additionally, a zigzag pattern hugs the regression line and it is difficult to say whether or not we would consider this data normally distributed.**INCOMPLETE**
+To check the normality of the errors \(ε_i\), analyze a normal Q-Q plot of the residuals. There appears to be a zigzag-like pattern in the residuals. This is reasonable enough to say that the points approximately fall on the line due to the KDE plot. In that chart, it is close to normality, but skews a little to the right. In addition, there is some departure by each of the tails, which are three outliers. The data is assumed to be normally distributed by its roughly "bell shaped" curve.
 
 **Scale-Location**\
-As seen in the other graphs, there is an extreme residual. We know that this is considered extreme because  of the following: 2xσ.**INCOMPLETE** 
+As seen in the other graphs, there are extreme residuals. We know that this is considered extreme because  of the following: 2xσ.
 
 **Residuals vs Leverage**\
-The (40) outlier has a big influence as it is underneath the 1 line to the right that refers to Cook’s distance. **INCOMPLETE**\
+The outliers have a big influence as it is exceeds the 1 and -1 lines that refers to Cook’s distance.
 
 **Autocorrelation**\
 The ACF plot shows that there is no evidence of autocorrelation between the residuals as the lags do not exceed the confidence interval.
@@ -237,4 +246,3 @@ Please calculate a 95% confidence interval for the average manufacturing cost pe
 CI = confint(lin_reg_helio)
 CI
 ```
-
