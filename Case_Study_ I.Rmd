@@ -39,8 +39,8 @@ helio <- read_csv("Case_Stud_ I.csv")
 
 ### Data Exploration
 ```{r, message=FALSE, warning=FALSE}
-kable(head(helio)) %>% kable_classic() %>% 
-  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed","responsive")) %>%
+kable(head(helio)) |>  kable_classic() |>  
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed","responsive")) |> 
   kable_styling(position = "center") # Use kable to design table
 
 str(helio) # Structure of object/ Type of variables
@@ -53,11 +53,11 @@ sapply(helio, function(x) length(unique(x)))
 
 ```{r, message=FALSE, warning=FALSE}
 # Produce result summaries
-CSUM <- data.frame(mean = sapply(helio[,2], mean,na.rm = T) 
-                  ,median = sapply(helio[,2], median,na.rm = T)
-                  ,min = sapply(helio[,2], min,na.rm = T)
-                  ,max = sapply(helio[,2], max,na.rm = T)
-                  ,sd = sapply(helio[,2], sd,na.rm = T))
+CSUM <- data.frame(mean = sapply(helio[1:2], mean,na.rm = T) 
+                  ,median = sapply(helio[1:2], median,na.rm = T)
+                  ,min = sapply(helio[1:2], min,na.rm = T)
+                  ,max = sapply(helio[1:2], max,na.rm = T)
+                  ,sd = sapply(helio[1:2], sd,na.rm = T))
 
 colnames(CSUM) = c("Mean","Median","Min","Max","Standard Deviation")
 
@@ -65,17 +65,24 @@ kable(head(CSUM)) |> kable_classic() |>
   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed","responsive")) |> 
   kable_styling(position = "center") # Use kable to design table
 ```
+```{r}
+ggplot(helio, aes(x = number_of_solar_panels, y =  manufacturing_cost)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  xlab("Number of Solar Panels") +
+  ylab("Manufacturing Cost")
+```
 
-```{r, message=FALSE, warning=FALSE}
-histogram <- ggplot(gather(data = helio),aes(x = value)) +
-  geom_histogram(aes(y = ..density..),bins = 10, color = "white", fill = "blue") + # Creates bin sizing & sets line color
-  geom_density(alpha = .2, fill = "#56B4E9") +
-  facet_wrap(~key,scales = "free") + # Converting the graphs into panels
-  ggtitle("Quantitative Variable Analysis") + # Title name
-  ylab("Count") + xlab("Value") + # Label names
-  theme_classic() # A classic theme, with x and y axis lines and no grid lines
+```{r}
+# Create a histogram with bin size = 100 for the number of solar panels
+hist(helio$manufacturing_cost, breaks = seq(500, 1500, by = 100),
+     main = "Manufacturing Cost by Number of Solar Panels",
+     xlab = "Manufacturing Cost",
+     ylab = "Count",
+     col = "blue",
+     border = "white")
 
-histogram
+# Add a vertical line to indicate the median value
+abline(v = median(helio$manufacturing_cost), col = "orange", lwd = 2)
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -170,21 +177,15 @@ The summary of the linear regression model aligns with the \(Y = a + b_1x_1\), w
 **Additionally, the learning rate...**
 
 ### Assumption Violations 
+There are several assumption violations that need to be checked to ensure that our model is properly predicting the response variable based on other independent characteristics. Since this specific data set only has two variables, VIF is not necessary to calculate since it is measuring the collinearity between the predictors variables and a regression model. The unique variance though, the tolerance value, can we calculated. The explanatory variance is approximately 95% while the unique is only 5%. The next part of these assumptions is to review the residuals. 
 
-**Variance Inflation Factors**
-```{r}
-# Compute the VIF value (explained)
-VIF = 1/(1-r_squared)
-VIF
-```
+**Tolerance Value**
 
 ```{r}
 # Compute the tolerance value (unique)
 tolerance_value = 1 - r_squared
 tolerance_value
 ```
-
-To properly analyze the results in the table above, we need to ensure that the variables to not exceed the average of VIF. Multicollinearity is present when certain VIF are larger than 5 or 10. The VIF in this data definitely exceeds at 20.07, showing signs of  multicollinearity between the number of solar panels and manufacturing cost. Additionally, the tolerance value or unique variance is approximately 5.0%, while the explained would be roughly 95.0%. **Therefore, we can conclude we do have to do a model selection.**
 
 ```{r, fig.width = 6, fig.height = 5}
 par(mfrow = c(2,2)) # Organizes graphs in a specific order
@@ -199,7 +200,7 @@ plot(d, main = 'Residual KDE Plot',xlab = 'Residual value')
 # Function to graph autocorrelations
 acf(resid(lin_reg_helio), main = "Residuals Autocorrelation") 
 ```
-**WILL ADJUST COMMENTS ONCE I FIGURE OUT VIF**
+
 **Residuals vs Fitted**\
 With any model, the residuals should assume the following:\
 
@@ -212,10 +213,10 @@ To ensure this criteria is met, we use the Residuals vs Fitted to check the lack
 - A residual will be considered large if its absolute value exceeds (approximately) 2σ(hat)\
 - When n is large, a residual will be considered large if its absolute value exceeds (approximately) 4σ(hat) (otherwise, too many residues will be considered large!)\
 
-There do appear to be three outliers (6, 11, and 18) and possibly heteroskedasticity as most residuals are grouped to the left and fewer are shown to the right which is considered non-constant. 
+There are three outliers (6, 11, and 18). In addition, there does not appear to be heteroskedasticity. But, there are some values that look strange as they appear to the right outside of the constant grouping of residuals. 
 
 **Normal Q-Q**\
-To check the normality of the errors \(ε_i\), analyze a normal Q-Q plot of the residuals. There appears to be a zigzag-like pattern in the residuals. This is reasonable enough to say that the points approximately fall on the line due to the KDE plot. In that chart, it is close to normality, but skews a little to the right. In addition, there is some departure by each of the tails, which are three outliers. The data is assumed to be normally distributed by its roughly "bell shaped" curve.
+To check the normality of the errors \(ε_i\), analyze a normal Q-Q plot of the residuals. There appears to be a zigzag-like pattern in the residuals. This is reasonable enough to say that the points approximately fall on the line due to the KDE plot. In that chart, it is close to normality, but skews a little to the right. In addition, there is some departure by each of the tails, which are three outliers. The data is assumed to be normally distributed by its roughly "bell shaped" curve. Since we are analyzing a cumulative variable (`number_of_solar_panels`) though, this may be the right interpretation.
 
 **Scale-Location**\
 As seen in the other graphs, there are extreme residuals. We know that this is considered extreme because  of the following: 2xσ.
@@ -231,12 +232,11 @@ Please use the experience curve estimate from the regression model to calculate 
 
 ```{r, message=FALSE, warning=FALSE}
 # Rerun the model by using the lm() function to fit the linear regression model, did not log manufacturing cost to get actual CHF values
-model <- lm(manufacturing_cost ~ log(number_of_solar_panels), data = helio)
+model <- lm(log(manufacturing_cost) ~ log(number_of_solar_panels), data = helio)
 
 # Expected average manufacturing cost per solar panel for 400 solar panels
-man_cost <- predict(model, newdata = data.frame(number_of_solar_panels = 400))
+man_cost <- exp(predict(model, newdata = data.frame(number_of_solar_panels = 400)))
 man_cost
-
 
 # Expected average manufacturing cost per solar panel for 4700, 4800, 4900 and 5000 units
 man_cost_4700 <- predict(model, newdata = data.frame(number_of_solar_panels = 4700))
@@ -244,13 +244,20 @@ man_cost_4800 <- predict(model, newdata = data.frame(number_of_solar_panels = 48
 man_cost_4900 <- predict(model, newdata = data.frame(number_of_solar_panels = 4900))
 man_cost_5000 <- predict(model, newdata = data.frame(number_of_solar_panels = 5000))
 
-man_cost_4700
-man_cost_4800
-man_cost_4900
-man_cost_5000
+cost_4700 <- exp(man_cost_4700)
+cost_4700
+
+cost_4800 <- exp(man_cost_4800)
+cost_4800
+
+cost_4900 <- exp(man_cost_4900)
+cost_4900
+
+cost_5000 <- exp(man_cost_5000)
+cost_5000
 
 # Mean of certain units
-mean(c(man_cost_4700, man_cost_4800, man_cost_4900, man_cost_5000))
+mean(c(cost_4700, cost_4800, cost_4900, cost_5000))
 ```
 
 **COMMENT**
