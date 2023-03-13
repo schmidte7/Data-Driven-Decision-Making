@@ -37,7 +37,8 @@ helio <- read_csv("Case_Stud_ I.csv")
 #View(Case_Stud_I)
 ```
 
-### Data Exploration
+### Preliminary Data Exploratory
+
 ```{r, message=FALSE, warning=FALSE}
 kable(head(helio)) |>  kable_classic() |>  
   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed","responsive")) |> 
@@ -50,6 +51,13 @@ summary(helio) # Produce result summaries of all variables
 # Number of unique values in each variable
 sapply(helio, function(x) length(unique(x)))
 ```
+
+```{r, message=FALSE, warning=FALSE}
+# Missing values analysis
+gg_miss_var(helio) + ggtitle("Missing Values")
+```
+
+There are 22 observations and 2 variables. There is information on the number of solar panels and manufacturing cost. When calling summary(), it is noticed that there is one variable type, numeric. 
 
 ```{r, message=FALSE, warning=FALSE}
 # Produce result summaries
@@ -65,12 +73,15 @@ kable(head(CSUM)) |> kable_classic() |>
   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed","responsive")) |> 
   kable_styling(position = "center") # Use kable to design table
 ```
+
 ```{r}
 ggplot(helio, aes(x = number_of_solar_panels, y =  manufacturing_cost)) +
   geom_bar(stat = "identity", fill = "blue") +
   xlab("Number of Solar Panels") +
   ylab("Manufacturing Cost")
 ```
+
+As the number of solar panels at Heliotronic increases, the average manufacturing cost typically decreases. 
 
 ```{r}
 # Create a histogram with bin size = 100 for the number of solar panels
@@ -83,37 +94,28 @@ hist(helio$manufacturing_cost, breaks = seq(500, 1500, by = 100),
 
 # Add a vertical line to indicate the median value
 abline(v = median(helio$manufacturing_cost), col = "orange", lwd = 2)
+
+#median(helio$manufacturing_cost)
+#mean(helio$manufacturing_cost)
 ```
 
+The median manufacturing cost is \($\)849.55 and the mean is \($\)901.06. Without looking at the data, an analyst would immediately know that this data is skewed since the mean and median are not close together. Graphically, it is seen that the bar chart has a tail to the right. This information shows how a logarithmic transformation may need to be transformed.
+
 ```{r, message=FALSE, warning=FALSE}
-# Using ggplot to create two boxplots with various features
-MF_cost.box <- ggplot(data = helio, aes(x = "",y = manufacturing_cost)) + 
+# Using ggplot to create one boxplot with various features
+ggplot(data = helio, aes(x = "",y = manufacturing_cost)) + 
     geom_boxplot(fill = "lightblue", alpha=0.2, outlier.shape = 21, outlier.color = "black") +
     stat_boxplot(geom = 'errorbar', linetype=1, width=0.25) + 
     ylab("Manufacturing Cost") + # Label names
     theme_classic() # A classic theme, no grid lines
-
-Number_solar.box <- ggplot(data = helio, aes(x = "",y = number_of_solar_panels)) + 
-    geom_boxplot(fill = "lightblue", alpha=0.2, outlier.shape = 21, outlier.color = "black") +
-    stat_boxplot(geom = 'errorbar', linetype=1, width=0.25) + 
-    ylab("Number of Solar Panels") + # Label names
-    theme_classic() # A classic theme, no grid lines
-
-# Places the graphs into one space
-plot_grid(MF_cost.box, Number_solar.box, labels = "AUTO", 
-  label_fontfamily = "serif",
-  label_fontface = "plain",
-  label_colour = "lightblue")
 ```
 
-```{r, message=FALSE, warning=FALSE}
-# Missing values analysis
-gg_miss_var(helio) + ggtitle("Missing Values")
-```
+The manufacturing boxplot tells the same story as the histogram. Except here, it is seen that there is an outlier above $1,250. From reviewing the data, this data point is at 100 solar panels.
 
 ## Question 1
-Use an electronic spreadsheet to plot the data displayed in table 1 and draw a scatter plot (point diagram). Does the multiplicative learning model which assumes the following relationship: \(Y = AX^b\) apply to this data set? In our case \(Y\) are the average manufacturing cost of the last batch of 100 solar panels at Heliotronic in $ after having
-produced a cumulative production of \(X\) solar panels. In the table \(X\) represents the column labeled total number of solar panels produced at Heliotronics. \(b\) is the experience parameter not to be confused with the learning rate. \(X\) is the price or cost of the first unit. Obviously \(Y = AX^b\) is not a linear relationship of the type that regression analysis can model \(Y = a + b_1x_1\). So the question now is to transform the data in order to get a linear relationship. Make an appropriate transformation of the data and redo the plot with the transformed data.
+
+Use an electronic spreadsheet to plot the data displayed in table 1 and draw a scatter plot (point diagram). Does the multiplicative learning model which assumes the following relationship: $Y = AX^b$ apply to this data set? In our case $Y$ are the average manufacturing cost of the last batch of 100 solar panels at Heliotronic in \$ after having produced a cumulative production of $X$ solar panels. In the table $X$ represents the column labeled total number of solar panels produced at Heliotronics. $b$ is the experience parameter not to be confused with the learning rate. $X$ is the price or cost of the first unit. Obviously $Y = AX^b$ is not a linear relationship of the type that regression analysis can model $Y = a + b_1x_1$. So the question now is to transform the data in order to get a linear relationship. Make an appropriate transformation of the data and redo the plot with the transformed data.
+
 ```{r, message=FALSE, warning=FALSE}
 # Create scatterplot with original values
 ggplot(helio, aes(number_of_solar_panels, manufacturing_cost) ) +
@@ -125,12 +127,12 @@ ggplot(helio, aes(number_of_solar_panels, manufacturing_cost) ) +
   theme_classic() # A classic theme, no grid lines
 ```
 
-A multiplicative learning model assumes the relationship of \(Y = AX^b\). This model is non-linear, and follows the assumption that as the cost of manufacturing decreases, the number of units produced increases. This is seen above as their relationship is inversely related. The goal of modeling this data is to fit a linear equation to show the relationship between the independent variable ('number of solar panels') and the dependent ('manufacturing cost') to predict price per some 'x' amount of units.
+A multiplicative learning model assumes the relationship of $Y = AX^b$. This model is non-linear, and follows the assumption that as the cost of manufacturing decreases, the number of units produced increases. This is seen above as their relationship is inversely related. The goal of modeling this data is to fit a linear equation to show the relationship between the independent variable ('number of solar panels') and the dependent ('manufacturing cost') to predict price per some 'x' amount of units.
 
-- \(Y\): The inflation-adjusted production cost per unit of a product  
-- \(X\): The total cumulative production of a product  
-- \(b\): The experience parameter not to be confused with the learning rate  
-- \(A\): The production cost of the first unit  
+-   $Y$: The inflation-adjusted production cost per unit of a product\
+-   $X$: The total cumulative production of a product\
+-   $b$: The experience parameter not to be confused with the learning rate\
+-   $A$: The production cost of the first unit
 
 ```{r, message=FALSE, warning=FALSE}
 # Used ggpairs to create a scatterplot matrix
@@ -158,10 +160,12 @@ ggplot(helio, aes(Log_number, Log_cost) ) +
   theme_classic() # A classic theme, no grid lines
 ```
 
-To address the problem of non-linearity, transformation of the variables may improve the accuracy of the model. The method used for the predictor and explanatory variable is taking the log. These two new values are added into the data frame and can be remodeled to show the inverse relationship through a linear regression. Now, the model aligns with \(Y = a + b_1x_1\).
+To address the problem of non-linearity, transformation of the variables may improve the accuracy of the model. The method used for the predictor and explanatory variable is taking the log. These two new values are added into the data frame and can be remodeled to show the inverse relationship through a linear regression. Now, the model aligns with $Y = a + b_1x_1$.
 
 ## Question 2
+
 Once you have answered the above questions, conduct a linear regression with the transformed data: Use `R` to estimate the regression model. Please interpret the results of the regression analysis! How well does the model explain the data? What is the learning rate that applies in this case?
+
 ```{r, message=FALSE, warning=FALSE}
 # Linear regression
 lin_reg_helio = with(helio,lm(Log_cost ~ Log_number))
@@ -169,15 +173,16 @@ summary(lin_reg_helio)
 r_squared <- summary(lin_reg_helio)$r.squared # Computed for Tolerance value and VIF
 ```
 
-The summary of the linear regression model aligns with the \(Y = a + b_1x_1\), with the following characteristics: 
+The summary of the linear regression model aligns with the $Y = a + b_1x_1$, with the following characteristics:
 
-- Model equation: \(LogCost = 4.309353 + (-0.154991)(LogNumber)\)\ 
-- Multiple R-squared is 95.02%, indicating that about 95% of the variability in the dependent variable can be explained by the number of solar panels produced. If more data was given, the Adjusted R-squared may have been a better metric since it adjusts for the amount of independent variables.\
+-   Model equation: $LogCost = 4.309353 + (-0.154991)(LogNumber)$ 
+-   Multiple R-squared is 95.02%, indicating that about 95% of the variability in the dependent variable can be explained by the number of solar panels produced. If more data was given, the Adjusted R-squared may have been a better metric since it adjusts for the amount of independent variables.\
 
 **Additionally, the learning rate...**
 
-### Assumption Violations 
-There are several assumption violations that need to be checked to ensure that our model is properly predicting the response variable based on other independent characteristics. Since this specific data set only has two variables, VIF is not necessary to calculate since it is measuring the collinearity between the predictors variables and a regression model. The unique variance though, the tolerance value, can we calculated. The explanatory variance is approximately 95% while the unique is only 5%. The next part of these assumptions is to review the residuals. 
+### Assumption Violations
+
+There are several assumption violations that need to be checked to ensure that our model is properly predicting the response variable based on other independent characteristics. Since this specific data set only has two variables, VIF is not necessary to calculate since it is measuring the collinearity between the predictors variables and a regression model. The unique variance though, the tolerance value, can we calculated. The explanatory variance is approximately 95% while the unique is only 5%. The next part of these assumptions is to review the residuals.
 
 **Tolerance Value**
 
@@ -204,31 +209,32 @@ acf(resid(lin_reg_helio), main = "Residuals Autocorrelation")
 **Residuals vs Fitted**\
 With any model, the residuals should assume the following:\
 
-1. ± as many negatives as positives (values), distributed around zero\
-2. No structure\
-3. No extreme values\
+1.  ± as many negatives as positives (values), distributed around zero\
+2.  No structure\
+3.  No extreme values\
 
 To ensure this criteria is met, we use the Residuals vs Fitted to check the lack of structure or presence of extreme values. It is important to note the following:\
 
-- A residual will be considered large if its absolute value exceeds (approximately) 2σ(hat)\
-- When n is large, a residual will be considered large if its absolute value exceeds (approximately) 4σ(hat) (otherwise, too many residues will be considered large!)\
+-   A residual will be considered large if its absolute value exceeds (approximately) 2σ(hat)\
+-   When n is large, a residual will be considered large if its absolute value exceeds (approximately) 4σ(hat) (otherwise, too many residues will be considered large!)\
 
-There are three outliers (6, 11, and 18). In addition, there does not appear to be heteroskedasticity. But, there are some values that look strange as they appear to the right outside of the constant grouping of residuals. 
+There are three outliers (6, 11, and 18). In addition, there does not appear to be heteroskedasticity. But, there are some values that look strange as they appear to the right outside of the constant grouping of residuals.
 
 **Normal Q-Q**\
-To check the normality of the errors \(ε_i\), analyze a normal Q-Q plot of the residuals. There appears to be a zigzag-like pattern in the residuals. This is reasonable enough to say that the points approximately fall on the line due to the KDE plot. In that chart, it is close to normality, but skews a little to the right. In addition, there is some departure by each of the tails, which are three outliers. The data is assumed to be normally distributed by its roughly "bell shaped" curve. Since we are analyzing a cumulative variable (`number_of_solar_panels`) though, this may be the right interpretation.
+To check the normality of the errors $ε_i$, analyze a normal Q-Q plot of the residuals. There appears to be a zigzag-like pattern in the residuals. This is reasonable enough to say that the points approximately fall on the line due to the KDE plot. In that chart, it is close to normality, but skews a little to the right. In addition, there is some departure by each of the tails, which are three outliers. The data is assumed to be normally distributed by its roughly "bell shaped" curve. Since we are analyzing a cumulative variable (`number_of_solar_panels`) though, this may be the right interpretation.
 
 **Scale-Location**\
-As seen in the other graphs, there are extreme residuals. We know that this is considered extreme because  of the following: 2xσ.
+As seen in the other graphs, there are extreme residuals. We know that this is considered extreme because of the following: 2xσ.
 
 **Residuals vs Leverage**\
-The outliers have a big influence as it is exceeds the 1 and -1 lines that refers to Cook’s distance.
+The outliers have a big influence as it is exceeds the 1 and -1 lines that refers to Cook's distance.
 
 **Autocorrelation**\
 The ACF plot shows that there is no evidence of autocorrelation between the residuals as the lags do not exceed the confidence interval.
 
 ## Question 3
-Please use the experience curve estimate from the regression model to calculate the expected average manufacturing cost per solar panel for the 400 solar panels that would be produced. for Switzerland. *Hint*: estimate the average production cost per solar panel for 4700, 4800, 4900 and 5000 units and compute their mean.
+
+Please use the experience curve estimate from the regression model to calculate the expected average manufacturing cost per solar panel for the 400 solar panels that would be produced. for Switzerland. *Hint*: Estimate the average production cost per solar panel for 4700, 4800, 4900 and 5000 units and compute their mean.
 
 ```{r, message=FALSE, warning=FALSE}
 # Rerun the model by using the lm() function to fit the linear regression model, did not log manufacturing cost to get actual CHF values
@@ -260,9 +266,10 @@ cost_5000
 mean(c(cost_4700, cost_4800, cost_4900, cost_5000))
 ```
 
-**COMMENT**
+In order to calculate the expected average manufacturing cost, the `predict()` function was used to make predictions on various options for the number of solar panels. First, we estimated how much 400 solar panels would cost, which is \($\)1,014.05. Next, we found the mean of the four values for the solar panels to get an average cost at \($\)688.84. Since the variables were log transformed, we had to get back to the original scale by using the `exp()` function.
 
 ## Question 4
+
 Please calculate a 95% confidence interval for the average manufacturing cost per solar panel for the panels produced for Switzerland by using the lower and upper bounds of the confidence interval estimate for the experience parameter. You should calculate two extra regression equations for both limits and then calculate the expected average manufacturing cost per solar panel for the 400 solar panels that would be produced for Switzerland as in exercise 3.
 
 ```{r, message=FALSE, warning=FALSE}
@@ -291,7 +298,6 @@ DF = 20
 t_value = 2.093 # DF - 1, Table D from Biz Analytics
 ```
 
-
 ```{r}
 # Formulas from class in PDF
 lower_bound = slope - SE*t_value
@@ -308,4 +314,3 @@ upper_cost = intercept - upper_bound*log(400)
 lower_cost
 upper_cost
 ```
-
